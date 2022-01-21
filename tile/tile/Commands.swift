@@ -9,21 +9,50 @@ import Foundation
 
 class Commands {
     
-    static fileprivate var _layouts:[Layout]?
-    static fileprivate var _cols:[Col]?
     
-    static func getLayouts() -> (layouts:[Layout], allCols:[Col])
+    static func run()
     {
-        
-        if _layouts != nil {
-            return (_layouts!,_cols!)
-        }
-        
+        var i = 1
+        while i < CommandLine.arguments.count {
+            
+            let arg=CommandLine.arguments[i].lowercased()
+            let next=i < CommandLine.arguments.count-1 ? CommandLine.arguments[i+1] : ""
+            
+            do {
+                switch arg {
+                    
+                case "-sleep-ms":
+                    i += try sleepMs(argI: i, nextArg: next, args: CommandLine.arguments)
+                    
+                case "-move":
+                    i += try move(argI: i, nextArg: next, args: CommandLine.arguments)
+                    
+                case "-full-screen":
+                    i += try fullScreen(argI: i, nextArg: next, args: CommandLine.arguments)
+                    
+                case "-auto-layout":
+                    i += try autoLayout(argI: i, nextArg: next, args: CommandLine.arguments)
+                    
         // Load layout JSON
         guard let layoutData=FileManager.default.contents(atPath: NSString(string:"~/.tile/layout.json").expandingTildeInPath) else {
             print("~/.tile/layout.json")
             exit(1)
+                    
+                default:
+                    print("Invalid arg \(arg)")
+                    exit(1)
+                        
+                    
+                }
+            }catch{
+                print("Exiting due to error")
+                exit(1)
+            }
+            
+            i += 1
         }
+    }
+    
         var layouts: [Layout]
         
         do {
@@ -40,14 +69,23 @@ class Commands {
         _layouts=layouts
         _cols=cols
         
-        return (layouts,cols)
-    }
     
+    static func sleepMs(argI:Int, nextArg:String, args:[String]) throws -> Int
+    {
+        guard let v=UInt32(nextArg) else {
+            print("Invalid -sleep-ms value. UInt32 expected")
+            throw LayoutError.failed
+        }
+        
+        usleep(v*1000)
+        
+        return 1
+    }
     
     static func move(argI:Int, nextArg:String, args:[String]) throws -> Int
     {
         
-        let (layouts,cols)=getLayouts()
+        let (layouts,cols)=LayoutManager.getLayouts()
         
         var dir:MoveDirection = .Left
         
@@ -116,7 +154,7 @@ class Commands {
             revBump=true
         }
 
-        let rect=bump ? col.getRect() : revBump ? row.getRect() : col.getRect(row.index!,found.rowSpan)
+        let rect=bump ? col.getRect() : revBump ? row.getRect() : col.getRect(row.index ?? 0,found.rowSpan)
 
         front.setRectOf(rect)
         
@@ -128,7 +166,7 @@ class Commands {
     {
         let all=AccessibilityElement.allWindows()
         
-        let (layouts,_)=getLayouts()
+        let (layouts,_)=LayoutManager.getLayouts()
         
         for win in all {
             
@@ -143,6 +181,22 @@ class Commands {
             win.setRectOf(found.col.getRect(found.row.index!,found.rowSpan))
         }
         
+        return 0
+        
+    }
+    
+    
+    static func fullScreen(argI:Int, nextArg:String, args:[String]) throws -> Int
+    {
+        // get front window
+        guard let front=AccessibilityElement.frontmostWindow(),
+              let screen=front.getScreen() else {
+            print("front window not found")
+            throw LayoutError.failed
+        }
+
+        front.setRectOf(screen.visibleFrame)
+
         return 0
         
     }

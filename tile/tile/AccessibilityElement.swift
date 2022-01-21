@@ -230,6 +230,26 @@ class AccessibilityElement {
         return self.value(for: .window)
     }
     
+    public func getScreen() -> NSScreen? {
+        
+        var screen: NSScreen? = nil
+        var area: Double = 0
+        
+        let rect=self.rectOfElement()
+        
+        for s in NSScreen.screens {
+            let i=s.visibleFrame.intersection(rect)
+            let a=i.width*i.height
+            if a>area {
+                area=a
+                screen=s
+            }
+        }
+        
+        return screen
+        
+    }
+    
     private func application() -> Self? {
         var element = self
         while element.role() != kAXApplicationRole {

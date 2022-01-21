@@ -20,6 +20,44 @@ enum MoveDirection : String {
     case Down = "down"
 }
 
+class LayoutManager {
+    static fileprivate var _layouts:[Layout]?
+    static fileprivate var _cols:[Col]?
+    
+    
+    
+    static func getLayouts() -> (layouts:[Layout], allCols:[Col])
+    {
+        
+        if _layouts != nil {
+            return (_layouts!,_cols!)
+        }
+        
+        // Load layout JSON
+        guard let layoutData=FileManager.default.contents(atPath: NSString(string:"~/.tile/layout.json").expandingTildeInPath) else {
+            print("~/.tile/layout.json")
+            exit(1)
+        }
+        var layouts: [Layout]
+        
+        do {
+            layouts = try JSONDecoder().decode([Layout].self, from: layoutData)
+        }catch{
+            layouts=[]
+            print("Failed to load layouts json")
+        }
+
+        // example / format layouts
+        layouts=Layout.expandAry(layouts)
+        let cols=Layout.joinCols(layouts)
+        
+        _layouts=layouts
+        _cols=cols
+        
+        return (layouts,cols)
+    }
+}
+
 class Layout: Codable {
     
     var index: Int?
@@ -40,10 +78,37 @@ class Layout: Codable {
     
     var cols:[Col] = []
     
+    static func create2x2() -> Layout
+    {
+        let layout=Layout()
+        layout.cols=[
+            {
+                let col=Col()
+                col.rows=[Row(),Row()]
+                return col
+            }(),
+            {
+                let col=Col()
+                col.rows=[Row(),Row()]
+                return col
+            }()]
+        return layout
+    }
+    
     static func create2x1() -> Layout
     {
         let layout=Layout()
-        layout.cols=[Col(),Col()]
+        layout.cols=[
+            {
+                let col=Col()
+                col.rows=[Row()]
+                return col
+            }(),
+            {
+                let col=Col()
+                col.rows=[Row()]
+                return col
+            }()]
         return layout
     }
     
@@ -109,7 +174,7 @@ class Layout: Codable {
         }
     }
     
-    static func expandAry(_ layouts: [Layout]) -> [Layout]
+    static func expandAry(_ sourceLayouts: [Layout]) -> [Layout]
     {
         var height:Double=0
         for screen in NSScreen.screens {
@@ -118,19 +183,22 @@ class Layout: Codable {
             }
         }
         
+        var layouts:[Layout] = []
+        
         var index:Int = 0
         var colIndex:Int = 0
         for screen in NSScreen.screens {
             let rect=screen.visibleFrame
             var layout:Layout
             
-            layout=layouts.last ?? create2x1()
-            for l in layouts {
+            layout=sourceLayouts.last ?? create2x1()
+            for l in sourceLayouts {
                 if l.minWidth != nil && Int(rect.width) >= l.minWidth! {
                     layout=l
                     break
                 }
             }
+            layout=layout.clone()
             layout.expand(
                 index,
                 colIndex,
@@ -141,6 +209,8 @@ class Layout: Codable {
             
             index += 1
             colIndex += layout.cols.count
+            
+            layouts.append(layout)
             
         }
         
@@ -158,6 +228,17 @@ class Layout: Codable {
         }
         
         return cols
+    }
+    
+    public func clone() -> Layout
+    {
+        do{
+            let data = try JSONEncoder().encode(self)
+            let copy = try JSONDecoder().decode(Layout.self, from: data)
+            return copy
+        }catch{
+            return Layout()
+        }
     }
     
     // Exapndes the Layout with columns and rows with absolute dimensions
