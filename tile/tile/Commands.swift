@@ -194,8 +194,28 @@ class Commands {
             print("front window not found")
             throw LayoutError.failed
         }
+        
+        let (layouts,_)=LayoutManager.getLayouts()
+        
+        let rect=front.rectOfElement()
+        
+        if rect.width == screen.visibleFrame.width && rect.height == screen.visibleFrame.height {
+            
+            guard let id=front.getIdentifier(),
+                  let state=WindowState.LoadState(id)
+            else{
+                return 0
+            }
+            
+            front.setRectOf(state.getRect())
+            
+        }else{
+        
+            WindowState.GetState(front, layouts).Save()
 
-        front.setRectOf(screen.visibleFrame)
+            front.setRectOf(screen.visibleFrame)
+            
+        }
 
         return 0
         
