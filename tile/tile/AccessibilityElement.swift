@@ -140,6 +140,17 @@ class AccessibilityElement {
 
         return nil
     }
+    
+    func getTitle() -> String? {
+        var rawValue: CFTypeRef?
+        let error = AXUIElementCopyAttributeValue(self.underlyingElement, kAXTitleAttribute as CFString, &rawValue)
+
+        if error == .success {
+            return ((rawValue! as! CFString) as NSString) as String
+        }
+
+        return nil
+    }
 
     func getIdentifier() -> Int? {
         if let windowInfo = CGWindowListCopyWindowInfo(.optionOnScreenOnly, 0) as? Array<Dictionary<String,Any>> {

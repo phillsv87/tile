@@ -33,10 +33,9 @@ class Commands {
                 case "-auto-layout":
                     i += try autoLayout(argI: i, nextArg: next, args: CommandLine.arguments)
                     
-        // Load layout JSON
-        guard let layoutData=FileManager.default.contents(atPath: NSString(string:"~/.tile/layout.json").expandingTildeInPath) else {
-            print("~/.tile/layout.json")
-            exit(1)
+                case "-show-create":
+                    i += try showOrCreateWindow(argI: i, nextArg: next, args: CommandLine.arguments)
+                    
                     
                 default:
                     print("Invalid arg \(arg)")
@@ -219,5 +218,41 @@ class Commands {
 
         return 0
         
+    }
+    
+    static func showOrCreateWindow(argI:Int, nextArg:String, args:[String]) throws -> Int
+    {
+        if args.count <= argI+1 {
+            print("usage: -show-create [wnidow title] [create args]")
+            return 0
+        }
+        
+        let title=args[argI+1]
+        
+        let all=AccessibilityElement.allWindows()
+        
+        let match = all.first(where: { $0.getTitle() == title })
+        
+        if match != nil {
+            match!.bringToFront()
+        }else{
+            let shellArgs=Array(args[(argI+2)...])
+            if shellArgs.count > 0 {
+                print(shell(shellArgs.joined(separator: " ")))
+            }
+        }
+        
+        
+        
+        return args.count - argI
+    }
+    
+    static func shell(_ args: String) -> Int32 {
+        let task = Process()
+        task.launchPath = "/bin/bash"
+        task.arguments = ["-c",args]
+        task.launch()
+        task.waitUntilExit()
+        return task.terminationStatus
     }
 }
