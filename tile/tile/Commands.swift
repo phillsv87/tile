@@ -36,6 +36,8 @@ class Commands {
                 case "-show-create":
                     i += try showOrCreateWindow(argI: i, nextArg: next, args: CommandLine.arguments)
                     
+                case "-daemon":
+                    i += daemon()
                     
                 default:
                     print("Invalid arg \(arg)")
@@ -52,22 +54,31 @@ class Commands {
         }
     }
     
-        var layouts: [Layout]
+    static func daemon() -> Int
+    {
+        let d=Daemon()
         
-        do {
-            layouts = try JSONDecoder().decode([Layout].self, from: layoutData)
-        }catch{
-            layouts=[]
-            print("Failed to load layouts json")
+        d.start()
+        
+        print("Runing daemon")
+        
+        loop:while true {
+            
+            let line=readLine()
+            
+            switch line {
+                
+            case "q":
+                break loop
+                
+            default:
+                print("command not reconized")
+            }
+            
         }
-
-        // example / format layouts
-        layouts=Layout.expandAry(layouts)
-        let cols=Layout.joinCols(layouts)
         
-        _layouts=layouts
-        _cols=cols
-        
+        return 0
+    }
     
     static func sleepMs(argI:Int, nextArg:String, args:[String]) throws -> Int
     {
