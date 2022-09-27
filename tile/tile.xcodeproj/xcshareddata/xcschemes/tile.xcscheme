@@ -69,7 +69,15 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "left"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "up"
             isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "down"
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-show-create"

@@ -161,15 +161,27 @@ class Commands {
         let row=col.rows![y]
 
         var revBump = false
+        print("bump \(bump), rev \(revBump)")
 
         if !hor && bump && found.rowSpan == col.rows!.count {
             bump=false
             revBump=true
         }
+        
+        print("bump \(bump), rev \(revBump)")
 
-        let rect=bump ? col.getRect() : revBump ? row.getRect() : col.getRect(row.index ?? 0,found.rowSpan)
+        var rect=bump ? col.getRect() : revBump ? row.getRect() : col.getRect(row.index ?? 0,found.rowSpan)
 
+        if front.rectOfElement().equalTo(rect) {
+            if revBump && dir == .Up {
+                rect = CGRect(x: rect.minX, y: rect.minY, width: rect.width, height: rect.height/2)
+            } else if revBump && dir == .Down {
+                rect = CGRect(x: rect.minX, y: rect.minY+rect.height/2, width: rect.width, height: rect.height/2)
+            }
+        }
+        
         front.setRectOf(rect)
+        
         
         return 1
     }
