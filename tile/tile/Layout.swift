@@ -199,8 +199,9 @@ class Layout: Codable {
     {
         var height:Double=0
         for screen in NSScreen.screens {
-            if screen.frame.height > height {
-                height=screen.frame.height
+            print("frame minX=\(screen.frame.minX),  minY=\(screen.frame.minY),  maxX=\(screen.frame.maxX),  maxY=\(screen.frame.maxY)")
+            if screen.frame.minY == 0 && screen.frame.minX == 0 {
+                height=screen.frame.maxY
             }
         }
         
@@ -214,7 +215,7 @@ class Layout: Codable {
             let rect=screen.visibleFrame
             var layout:Layout
             
-            print("screen width=\(rect.width),  height=\(rect.height),  x=\(rect.minX),  y=\(rect.minY)")
+            print("screen width=\(rect.width),  height=\(rect.height),  x=\(rect.minX),  y=\(rect.minY), maxY=\(rect.maxY)")
             
             layout=sourceLayouts.last ?? create2x1()
             for l in sourceLayouts {
