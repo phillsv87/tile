@@ -33,6 +33,9 @@ class Commands {
                 case "-auto-layout":
                     i += try autoLayout(argI: i, nextArg: next, args: CommandLine.arguments)
                     
+                case "-set-layout":
+                    i += try setLayout(argI: i, nextArg: next, args: CommandLine.arguments)
+                    
                 case "-show-create":
                     i += try showOrCreateWindow(argI: i, nextArg: next, args: CommandLine.arguments)
                     
@@ -169,6 +172,29 @@ class Commands {
         front.setRectOf(rect)
         
         return 1
+    }
+    
+    
+    static func setLayout(argI:Int, nextArg:String, args:[String]) throws -> Int
+    {
+        
+        do{
+            let data = try JSONEncoder().encode(nextArg)
+            
+            let dir=NSString(string:"~/.tile/state").expandingTildeInPath
+            
+            if !FileManager.default.fileExists(atPath:dir) {
+                try FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true, attributes: nil)
+            }
+            
+            try data.write(to: URL(fileURLWithPath:"\(dir)/current-layout.json"))
+            
+        }catch{
+            
+        }
+        
+        return 1
+        
     }
     
     

@@ -38,17 +38,28 @@ class LayoutManager {
             print("~/.tile/layout.json")
             exit(1)
         }
-        var layouts: [Layout]
         
+        var layouts: [Layout]
         do {
             layouts = try JSONDecoder().decode([Layout].self, from: layoutData)
         }catch{
             layouts=[]
             print("Failed to load layouts json")
         }
+        
+        var currentLayout: String = "default"
+        if let currentLayoutData=FileManager.default.contents(atPath: NSString(string:"~/.tile/state/current-layout.json").expandingTildeInPath) {
+            do {
+                currentLayout = try JSONDecoder().decode(String.self, from: currentLayoutData)
+            }catch{
+                print("Failed to current layout json")
+            }
+        }
+        
+        
 
         // example / format layouts
-        layouts=Layout.expandAry(layouts)
+        layouts=Layout.expandAry(currentLayout,layouts)
         let cols=Layout.joinCols(layouts)
         
         _layouts=layouts
@@ -62,6 +73,8 @@ class Layout: Codable {
     
     var index: Int?
     
+    var layout: String?
+    
     var x: Double?
     
     var y: Double?
@@ -70,9 +83,17 @@ class Layout: Codable {
     
     var height: Double?
     
-    var minWidth : Int? = 0
+    var minWidth : Int?
     
-    var minHeight: Int? = 0
+    var maxWidth : Int?
+    
+    var minHeight: Int?
+    
+    var maxHeight: Int?
+    
+    var minScreens: Int?
+    
+    var maxScreens: Int?
     
     var gap: Double?
     
@@ -174,7 +195,7 @@ class Layout: Codable {
         }
     }
     
-    static func expandAry(_ sourceLayouts: [Layout]) -> [Layout]
+    static func expandAry(_ currentLayout:String, _ sourceLayouts: [Layout]) -> [Layout]
     {
         var height:Double=0
         for screen in NSScreen.screens {
@@ -187,16 +208,50 @@ class Layout: Codable {
         
         var index:Int = 0
         var colIndex:Int = 0
-        for screen in NSScreen.screens {
+        for screen in NSScreen.screens.sorted(by: {
+            return $0.visibleFrame.minX < $1.visibleFrame.minX
+        } ) {
             let rect=screen.visibleFrame
             var layout:Layout
             
+            print("screen width=\(rect.width),  height=\(rect.height),  x=\(rect.minX),  y=\(rect.minY)")
+            
             layout=sourceLayouts.last ?? create2x1()
             for l in sourceLayouts {
-                if l.minWidth != nil && Int(rect.width) >= l.minWidth! {
-                    layout=l
-                    break
+                print("layout \(rect.width), screens=\(NSScreen.screens.count), maxWidth=\(l.maxWidth ?? 0), minWidth=\(l.minWidth ?? 0), maxScreens=\(l.maxScreens ?? 0), minScreens=\(l.minScreens ?? 0), layout=\(l.layout ?? "(all)")")
+                
+                if l.layout != nil && currentLayout != l.layout {
+                    continue
                 }
+                
+                if l.minWidth != nil && Int(rect.width) < l.minWidth! {
+                    continue
+                }
+                
+                if l.maxWidth != nil && Int(rect.width) > l.maxWidth! {
+                    continue
+                }
+                
+                if l.minHeight != nil && Int(rect.height) < l.minHeight! {
+                    continue
+                }
+                
+                if l.maxHeight != nil && Int(rect.height) > l.maxHeight! {
+                    continue
+                }
+                
+                if l.minScreens != nil && NSScreen.screens.count < l.minScreens! {
+                    continue
+                }
+                
+                if l.maxScreens != nil && NSScreen.screens.count > l.maxScreens! {
+                    continue
+                }
+                
+                print("select \(rect.width)")
+                layout=l
+                break
+                
             }
             layout=layout.clone()
             layout.expand(
